@@ -66,6 +66,9 @@ namespace Adin
 
                 foreach (Scene.Object obj in scene.Objects)
                 {
+                    if (obj.CatalogFilename == "SYSTEM" || obj.CatalogFilename.StartsWith("@"))
+                        continue;
+
                     var objXmlElement = xmlDocument.CreateElement("Object");
                     sceneXmlElement.AppendChild(objXmlElement);
 
