@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Xml;
 using System.Xml.Linq;
 using System;
+using System.Text;
 
 namespace Adin
 {
@@ -47,69 +48,42 @@ namespace Adin
             {
                 Scene scene = _appli.Scene;
 
-                var xmlDocument = new XmlDocument();
+                StringBuilder csvContent = new StringBuilder();
 
-                var sceneXmlElement = xmlDocument.CreateElement("Scene");
-                xmlDocument.AppendChild(sceneXmlElement);
-
-                sceneXmlElement.SetAttribute("FilenameWithPath", scene.FilenameWithPath);
-
-                var customerXmlElement = xmlDocument.CreateElement("Customer");
-                sceneXmlElement.AppendChild(customerXmlElement);
-
-                customerXmlElement.SetAttribute("Company",
-                                                scene.KeywordInfo["@Base.CustomerCompany()"]);
-                customerXmlElement.SetAttribute("Name",
-                                                scene.KeywordInfo["@Base.CustomerName()"]);
-                customerXmlElement.SetAttribute("FirstName",
-                                                scene.KeywordInfo["@Base.CustomerFirstName()"]);
+                // Add header row
+                csvContent.AppendLine("Number,Type,Catalog,KeyReference,Handing,Name,SupplierComment,FinishType,FinishCode,FinishName");
 
                 foreach (Scene.Object obj in scene.Objects)
                 {
-                    var objXmlElement = xmlDocument.CreateElement("Object");
-                    sceneXmlElement.AppendChild(objXmlElement);
-
-                    objXmlElement.SetAttribute("Number", obj.Number);
-                    objXmlElement.SetAttribute("Type", obj.Type.ToString());
-                    objXmlElement.SetAttribute("Catalog", obj.CatalogFilename.ToString());
-                    objXmlElement.SetAttribute("KeyReference", obj.KeyReference);
-                    objXmlElement.SetAttribute("Handing", obj.Handing.ToString());
-
-                    var nameXmlElement = xmlDocument.CreateElement("Name");
-                    objXmlElement.AppendChild(nameXmlElement);
-
-                    nameXmlElement.InnerText = obj.Name;
-
-                    if (obj.SupplierComment != string.Empty)
-                    {
-                        var supplierCommentXmlElement = xmlDocument.CreateElement("SupplierComment");
-                        objXmlElement.AppendChild(supplierCommentXmlElement);
-
-                        supplierCommentXmlElement.InnerText = obj.FitterComment;
-                    }
+                    string supplierComment = !string.IsNullOrEmpty(obj.SupplierComment) ? obj.SupplierComment : string.Empty;
 
                     var objFinishesConfig = obj.GetFinishesConfig();
-                    foreach (var finish in objFinishesConfig.Finishes)
+                    if (objFinishesConfig.Finishes.Count() == 0)
                     {
-                        var finishXmlElement = xmlDocument.CreateElement("Finish");
-                        objXmlElement.AppendChild(finishXmlElement);
-
-                        finishXmlElement.SetAttribute("Type", finish.Type.Name);
-                        finishXmlElement.SetAttribute("Code", finish.Code);
-                        finishXmlElement.SetAttribute("Name", finish.Name);
+                        // Add a single row if no finishes exist
+                        csvContent.AppendLine($"{obj.Number},{obj.Type},{obj.CatalogFilename},{obj.KeyReference},{obj.Handing},{obj.Name},{supplierComment},,,");
+                    }
+                    else
+                    {
+                        // Add a row for each finish
+                        foreach (var finish in objFinishesConfig.Finishes)
+                        {
+                            csvContent.AppendLine($"{obj.Number},{obj.Type},{obj.CatalogFilename},{obj.KeyReference},{obj.Handing},{obj.Name},{supplierComment},{finish.Type.Name},{finish.Code},{finish.Name}");
+                        }
                     }
                 }
 
                 SaveFileDialog saveFileDialog = new SaveFileDialog();
-                saveFileDialog.Filter = "XML-File | *.xml";
-                saveFileDialog.Title = "Save As XML File";
+                saveFileDialog.Filter = "CSV-File | *.csv";
+                saveFileDialog.Title = "Save As CSV File";
+
                 if (saveFileDialog.ShowDialog() == DialogResult.OK)
                 {
-                    xmlDocument.Save(saveFileDialog.FileName);
+                    File.WriteAllText(saveFileDialog.FileName, csvContent.ToString());
                 }
                 else
                 {
-                    MessageBox.Show("Please choose a proper XML file name");
+                    MessageBox.Show("Please choose a proper CSV file name");
                 }
             }
             catch (Exception exception)
