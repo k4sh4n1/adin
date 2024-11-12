@@ -21,7 +21,7 @@ namespace Adin
         {
             var menuInfo = new Appli.MenuItemInsertionInfo();
 
-            menuInfo.Text = "Hello, world!";
+            menuInfo.Text = "Adin";
             menuInfo.DllFilenameWithoutPath = Path.GetFileName(Assembly.GetExecutingAssembly().Location);
             menuInfo.ClassName = nameof(Plugin);
             menuInfo.MethodName = nameof(OnMyMenuItem);
@@ -40,7 +40,7 @@ namespace Adin
 
         public bool OnMyMenuItem(int unused)
         {
-            MessageBox.Show("Hello, world!");
+            MessageBox.Show("Enjoy.");
 
             return true;
         }
