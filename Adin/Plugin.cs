@@ -26,7 +26,7 @@ namespace Adin
             menuInfo.ClassName = nameof(Plugin);
             menuInfo.MethodName = nameof(OnMyMenuItem);
 
-            _myMenuItem = _appli.InsertMenuItem(menuInfo, Appli.MenuItem.StandardId.Help_LoadHours);
+            _myMenuItem = _appli.InsertMenuItem(menuInfo, Appli.MenuItem.StandardId.File_ExportBmp);
 
             return true;
         }
