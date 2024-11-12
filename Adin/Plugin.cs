@@ -6,6 +6,7 @@ using System.IO;
 using System.Reflection;
 using System.Xml;
 using System.Xml.Linq;
+using System;
 
 namespace Adin
 {
@@ -42,70 +43,82 @@ namespace Adin
 
         public bool OnMyMenuItem(int unused)
         {
-            Scene scene = _appli.Scene;
-
-            var xmlDocument = new XmlDocument();
-
-            var sceneXmlElement = xmlDocument.CreateElement("Scene");
-            xmlDocument.AppendChild(sceneXmlElement);
-
-            sceneXmlElement.SetAttribute("FilenameWithPath", scene.FilenameWithPath);
-
-            var customerXmlElement = xmlDocument.CreateElement("Customer");
-            sceneXmlElement.AppendChild(customerXmlElement);
-
-            customerXmlElement.SetAttribute("Company",
-                                            scene.KeywordInfo["@Base.CustomerCompany()"]);
-            customerXmlElement.SetAttribute("Name",
-                                            scene.KeywordInfo["@Base.CustomerName()"]);
-            customerXmlElement.SetAttribute("FirstName",
-                                            scene.KeywordInfo["@Base.CustomerFirstName()"]);
-
-            foreach (Scene.Object obj in scene.Objects)
+            try
             {
-                var objXmlElement = xmlDocument.CreateElement("Object");
-                sceneXmlElement.AppendChild(objXmlElement);
+                Scene scene = _appli.Scene;
 
-                objXmlElement.SetAttribute("Number", obj.Number);
-                objXmlElement.SetAttribute("Type", obj.Type.ToString());
-                objXmlElement.SetAttribute("Catalog", obj.CatalogFilename.ToString());
-                objXmlElement.SetAttribute("KeyReference", obj.KeyReference);
-                objXmlElement.SetAttribute("Handing", obj.Handing.ToString());
+                var xmlDocument = new XmlDocument();
 
-                var nameXmlElement = xmlDocument.CreateElement("Name");
-                objXmlElement.AppendChild(nameXmlElement);
+                var sceneXmlElement = xmlDocument.CreateElement("Scene");
+                xmlDocument.AppendChild(sceneXmlElement);
 
-                nameXmlElement.InnerText = obj.Name;
+                sceneXmlElement.SetAttribute("FilenameWithPath", scene.FilenameWithPath);
 
-                if (obj.SupplierComment != string.Empty)
+                var customerXmlElement = xmlDocument.CreateElement("Customer");
+                sceneXmlElement.AppendChild(customerXmlElement);
+
+                customerXmlElement.SetAttribute("Company",
+                                                scene.KeywordInfo["@Base.CustomerCompany()"]);
+                customerXmlElement.SetAttribute("Name",
+                                                scene.KeywordInfo["@Base.CustomerName()"]);
+                customerXmlElement.SetAttribute("FirstName",
+                                                scene.KeywordInfo["@Base.CustomerFirstName()"]);
+
+                foreach (Scene.Object obj in scene.Objects)
                 {
-                    var supplierCommentXmlElement = xmlDocument.CreateElement("SupplierComment");
-                    objXmlElement.AppendChild(supplierCommentXmlElement);
+                    var objXmlElement = xmlDocument.CreateElement("Object");
+                    sceneXmlElement.AppendChild(objXmlElement);
 
-                    supplierCommentXmlElement.InnerText = obj.FitterComment;
+                    objXmlElement.SetAttribute("Number", obj.Number);
+                    objXmlElement.SetAttribute("Type", obj.Type.ToString());
+                    objXmlElement.SetAttribute("Catalog", obj.CatalogFilename.ToString());
+                    objXmlElement.SetAttribute("KeyReference", obj.KeyReference);
+                    objXmlElement.SetAttribute("Handing", obj.Handing.ToString());
+
+                    var nameXmlElement = xmlDocument.CreateElement("Name");
+                    objXmlElement.AppendChild(nameXmlElement);
+
+                    nameXmlElement.InnerText = obj.Name;
+
+                    if (obj.SupplierComment != string.Empty)
+                    {
+                        var supplierCommentXmlElement = xmlDocument.CreateElement("SupplierComment");
+                        objXmlElement.AppendChild(supplierCommentXmlElement);
+
+                        supplierCommentXmlElement.InnerText = obj.FitterComment;
+                    }
+
+                    var objFinishesConfig = obj.GetFinishesConfig();
+                    foreach (var finish in objFinishesConfig.Finishes)
+                    {
+                        var finishXmlElement = xmlDocument.CreateElement("Finish");
+                        objXmlElement.AppendChild(finishXmlElement);
+
+                        finishXmlElement.SetAttribute("Type", finish.Type.Name);
+                        finishXmlElement.SetAttribute("Code", finish.Code);
+                        finishXmlElement.SetAttribute("Name", finish.Name);
+                    }
                 }
 
-                var objFinishesConfig = obj.GetFinishesConfig();
-                foreach (var finish in objFinishesConfig.Finishes)
+                SaveFileDialog saveFileDialog = new SaveFileDialog();
+                saveFileDialog.Filter = "XML-File | *.xml";
+                saveFileDialog.Title = "Save As XML File";
+                if (saveFileDialog.ShowDialog() == DialogResult.OK)
                 {
-                    var finishXmlElement = xmlDocument.CreateElement("Finish");
-                    objXmlElement.AppendChild(finishXmlElement);
-
-                    finishXmlElement.SetAttribute("Type", finish.Type.Name);
-                    finishXmlElement.SetAttribute("Code", finish.Code);
-                    finishXmlElement.SetAttribute("Name", finish.Name);
+                    xmlDocument.Save(saveFileDialog.FileName);
+                }
+                else
+                {
+                    MessageBox.Show("Please choose a proper XML file name");
                 }
             }
-
-            SaveFileDialog saveFileDialog = new SaveFileDialog();
-            saveFileDialog.Filter = "XML-File | *.xml";
-            saveFileDialog.Title = "Save As XML File";
-            if (saveFileDialog.ShowDialog() == DialogResult.OK)
+            catch (Exception exception)
             {
-                xmlDocument.Save(saveFileDialog.FileName);
-            } else
-            {
-                MessageBox.Show("Please choose a proper XML file name");
+                MessageBox.Show(
+                string.Join(Environment.NewLine,
+                    string.Format("Failed to run plugin '{0}':", "Adin"),
+                    exception.Message));
+                return false;
             }
 
             return true;
